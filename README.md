@@ -4,6 +4,8 @@ A ready-to-run GitHub Codespace for testing the [Ceph](https://ceph.com) S3-comp
 
 This repo spins up a real Ceph RADOS Gateway (RGW) inside your Codespace so you can make S3 REST API calls without any AWS account or external services.
 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/lbrenman/lite-ceph-s3-codespace)
+
 ---
 
 ## What's Inside
