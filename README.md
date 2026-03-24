@@ -191,6 +191,96 @@ curl https://xxxx.ngrok-free.app/ -H "ngrok-skip-browser-warning: true"
 
 ---
 
+## Exposing Ceph Externally with ngrok
+
+GitHub Codespaces port forwarding can cause `SignatureDoesNotMatch` errors with S3 clients because the forwarded URL adds an auth layer that interferes with request signing. **ngrok** is the recommended way to expose Ceph to external tools like an iPaaS S3 connector, Postman, or your local machine.
+
+### 1. Install ngrok in the Codespace
+
+```bash
+curl -fsSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc \
+  | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+
+echo "deb https://ngrok-agent.s3.amazonaws.com buster main" \
+  | sudo tee /etc/apt/sources.list.d/ngrok.list
+
+sudo apt-get update && sudo apt-get install ngrok
+```
+
+### 2. Authenticate
+
+Sign up for a free account at [ngrok.com](https://ngrok.com), copy your authtoken, then:
+
+```bash
+ngrok config add-authtoken YOUR_AUTHTOKEN
+```
+
+### 3. Start the tunnel
+
+```bash
+ngrok http 7480
+```
+
+You will see output like:
+
+```
+Forwarding  https://a853-172-210-53-196.ngrok-free.app -> http://localhost:7480
+```
+
+Use the `https://xxxx.ngrok-free.app` URL as your S3 endpoint in any external tool.
+
+### 4. Verify the tunnel
+
+From your local machine or any external client:
+
+```bash
+curl https://xxxx.ngrok-free.app/ -H "ngrok-skip-browser-warning: true"
+```
+
+Expected response — an XML bucket listing:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<ListAllMyBucketsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Owner>...</Owner>
+  <Buckets>
+    <Bucket><Name>demo-bucket</Name>...</Bucket>
+  </Buckets>
+</ListAllMyBucketsResult>
+```
+
+### 5. Test with AWS CLI from your local machine
+
+```bash
+aws s3 ls \
+  --endpoint-url https://xxxx.ngrok-free.app \
+  --no-verify-ssl
+
+aws s3 cp myfile.txt s3://demo-bucket/myfile.txt \
+  --endpoint-url https://xxxx.ngrok-free.app \
+  --no-verify-ssl
+```
+
+### Using ngrok with an iPaaS S3 Connector
+
+When configuring your iPaaS S3 connector, use these settings:
+
+| Field | Value |
+|-------|-------|
+| Endpoint / Custom URL | `https://xxxx.ngrok-free.app` |
+| Access Key | `demo-key` |
+| Secret Key | `demo-secret` |
+| Path Style | **Enabled** (required — see Path-Style Routing above) |
+| Region | `us-east-1` |
+
+> **Note:** Free ngrok URLs change every time you restart the tunnel. A paid ngrok plan lets you reserve a static subdomain so you don't have to update your connector config each session.
+
+### ngrok Web Inspector
+
+While the tunnel is running, ngrok exposes a local dashboard at `http://localhost:4040` where you can inspect every request and response in detail — very useful for debugging signature errors or seeing exactly what your iPaaS connector is sending.
+
+---
+
 ## Stopping and Restarting
 
 ```bash
