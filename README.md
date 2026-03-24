@@ -4,8 +4,6 @@ A ready-to-run GitHub Codespace for testing the [Ceph](https://ceph.com) S3-comp
 
 This repo spins up a real Ceph RADOS Gateway (RGW) inside your Codespace so you can make S3 REST API calls without any AWS account or external services.
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/lbrenman/lite-ceph-s3-codespace)
-
 ---
 
 ## What's Inside
@@ -166,6 +164,30 @@ bash examples/curl-demo.sh
 ```
 
 The `curl-demo.sh` script shows how to construct AWS Signature V4 manually using `openssl` and `curl` — useful for understanding what the SDK does under the hood, or for testing from an environment where you only have curl available (e.g., inside an Amplify Fusion flow).
+
+---
+
+## Path-Style Routing (Important for External Access)
+
+By default Ceph RGW uses **virtual-hosted-style** bucket routing, where it parses the `Host` header and treats the first segment as a bucket name. When accessed via an external URL (ngrok, Codespaces port forwarding, or an iPaaS S3 connector), the hostname gets mistaken for a bucket name and every request returns `NoSuchBucket`.
+
+`start-ceph.sh` automatically fixes this by setting `rgw_dns_name` to an empty string after startup, which forces **path-style** routing (`host/bucket/key` instead of `bucket.host/key`).
+
+If you need to apply this manually to an already-running container:
+
+```bash
+docker exec lite-ceph-s3 ceph config set client.rgw rgw_dns_name ""
+docker exec lite-ceph-s3 pkill -f radosgw
+sleep 8
+# RGW restarts automatically inside the container
+```
+
+Verify it worked:
+
+```bash
+curl https://xxxx.ngrok-free.app/ -H "ngrok-skip-browser-warning: true"
+# Should return XML listing buckets, not a NoSuchBucket error
+```
 
 ---
 

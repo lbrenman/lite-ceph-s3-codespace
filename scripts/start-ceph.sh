@@ -49,6 +49,35 @@ for i in $(seq 1 $RETRIES); do
   if curl -sf http://localhost:7480/ > /dev/null 2>&1; then
     echo ""
     echo "✅ Ceph S3 gateway is ready!"
+
+    # ── Disable virtual-hosted-style bucket routing ──────────────────
+    # By default Ceph RGW parses the Host header and treats the first
+    # segment as a bucket name (virtual-hosted style). When accessed via
+    # a forwarded URL (ngrok, Codespaces, iPaaS), the hostname gets
+    # mistaken for a bucket name and every request returns NoSuchBucket.
+    # Setting rgw_dns_name to "" tells RGW not to do this, forcing
+    # path-style routing: host/bucket/key instead of bucket.host/key.
+    echo ""
+    echo "Configuring RGW for path-style routing (disabling virtual-hosted-style)..."
+    docker exec "${CONTAINER_NAME}" ceph config set client.rgw rgw_dns_name ""
+    echo "  ✅ rgw_dns_name set to empty string"
+
+    # Restart RGW inside the container to pick up the config change
+    echo "Restarting RGW to apply config..."
+    docker exec "${CONTAINER_NAME}" pkill -f radosgw || true
+    sleep 5
+
+    # Wait for RGW to come back
+    for j in $(seq 1 10); do
+      if curl -sf http://localhost:7480/ > /dev/null 2>&1; then
+        echo "  ✅ RGW restarted successfully"
+        break
+      fi
+      printf "  Waiting for RGW restart... %d/10\n" "$j"
+      sleep 3
+    done
+    # ────────────────────────────────────────────────────────────────
+
     echo ""
     echo "Next steps:"
     echo "  bash scripts/test-s3.sh         # Run basic S3 smoke tests"
