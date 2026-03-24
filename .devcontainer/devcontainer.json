@@ -1,0 +1,30 @@
+{
+  "name": "Lite Ceph S3 Dev Environment",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
+
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+
+  "forwardPorts": [7480, 7443],
+
+  "portsAttributes": {
+    "7480": {
+      "label": "Ceph S3 API (HTTP)",
+      "onAutoForward": "notify"
+    },
+    "7443": {
+      "label": "Ceph S3 API (HTTPS)",
+      "onAutoForward": "notify"
+    }
+  },
+
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  "remoteEnv": {
+    "BUCKET_NAME": "demo-bucket",
+    "ACCESS_KEY": "demo-key",
+    "SECRET_KEY": "demo-secret",
+    "S3_ENDPOINT": "http://localhost:7480"
+  }
+}

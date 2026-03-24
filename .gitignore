@@ -1,0 +1,31 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Environment / secrets
+.env
+.env.local
+*.env
+
+# Test artifacts
+test-output/
+*.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# AWS CLI credentials (never commit these)
+.aws/credentials
